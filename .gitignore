@@ -1,0 +1,48 @@
+# --- Secrets & sensitive data ---
+.env
+.env.*
+myntra_cookies.json
+purchased_history.json
+*.cookies.json
+
+# --- Chrome / Playwright browser profile ---
+myntra_user_data/
+*.pma
+*.leveldb/
+*.ldb
+*.log
+
+# --- Python ---
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Virtual env activation / tooling ---
+.python-version
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# --- Logs & runtime artifacts ---
+*.log
+logs/
+
+# --- Generated/scratch files ---
+tree.json
+tree.txt
