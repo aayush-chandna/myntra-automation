@@ -13,4 +13,8 @@ for i in $(seq 1 20); do
   sleep 0.5
 done
 
-exec python myntra_weekly_order.py
+if [ "$RUN_MODE" = "schedule" ]; then
+  exec python scheduler.py
+else
+  exec python myntra_weekly_order.py
+fi

@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY myntra_weekly_order.py entrypoint.sh ./
+COPY myntra_weekly_order.py scheduler.py entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 
 ENV PYTHONUNBUFFERED=1 \
