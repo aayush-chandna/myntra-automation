@@ -4,6 +4,8 @@
 myntra_cookies.json
 purchased_history.json
 *.cookies.json
+cookies_for_docker_gui.txt
+docker.env
 
 # --- Chrome / Playwright browser profile ---
 myntra_user_data/

@@ -1,0 +1,14 @@
+venv/
+.venv/
+.git/
+.github/
+.env
+myntra_cookies.json
+purchased_history.json
+myntra_user_data/
+screenshots/
+__pycache__/
+*.pyc
+README.md
+install_dependencies.sh
+get_cookies.py

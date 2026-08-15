@@ -34,7 +34,7 @@ from playwright.sync_api import sync_playwright
 # CONFIGURATION
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).parent.resolve()
-HISTORY_FILE = BASE_DIR / "purchased_history.json"
+HISTORY_FILE = Path(os.getenv("HISTORY_FILE_PATH", str(BASE_DIR / "purchased_history.json")))
 COOKIE_FILE = BASE_DIR / "myntra_cookies.json"
 
 MAX_PRICE = 1000  # Strictly less than Rs. 1000
@@ -78,7 +78,10 @@ def verify_schedule_day():
 def get_native_chrome_context(playwright):
     """
     Attempts to connect to local Chrome on port 9222 first.
-    If unavailable (Cloud/GitHub Actions), launches headless Chromium and injects saved cookies.
+    If unavailable (Cloud/GitHub Actions), launches Chromium under a virtual
+    display (e.g. via xvfb-run) and injects saved cookies. Myntra's Akamai bot
+    protection blocks headless=True outright regardless of cookie validity, so
+    this must run non-headless with a DISPLAY available.
     """
     try:
         browser = playwright.chromium.connect_over_cdp("http://localhost:9222")
@@ -86,8 +89,8 @@ def get_native_chrome_context(playwright):
         print("💻 Connected to local Chrome session on port 9222.")
         return browser, context
     except Exception:
-        print("☁️ Port 9222 not found. Launching headless browser with saved cookies...")
-        browser = playwright.chromium.launch(headless=True)
+        print("☁️ Port 9222 not found. Launching browser (virtual display) with saved cookies...")
+        browser = playwright.chromium.launch(headless=False, args=["--no-sandbox"])
         context = browser.new_context()
 
         if COOKIE_FILE.exists():
@@ -255,7 +258,22 @@ def find_and_add_best_tshirt(context, page, history):
         return False, None
 
 
-def execute_full_checkout(context, page):
+def verify_order_placed(page, bought_item):
+    """
+    Confirms the order actually completed by checking the real order history
+    page, rather than trusting the checkout click sequence to have worked —
+    Myntra's UI can silently no-op on an unexpected step (stale selector,
+    extra items in cart, etc.) without raising an error.
+    """
+    print("Verifying order in order history...")
+    page.goto("https://www.myntra.com/my/orders", wait_until="domcontentloaded", timeout=15000)
+    page.wait_for_timeout(3000)
+    text = page.inner_text("body")
+    title_words = [w for w in bought_item["title"].split() if len(w) > 3]
+    return bought_item["brand"] in text and any(w in text for w in title_words)
+
+
+def execute_full_checkout(context, page, bought_item):
     print("\n🛒 Navigating to Cart...")
     page.goto("https://www.myntra.com/checkout/cart", wait_until="domcontentloaded")
     page.wait_for_timeout(3000)
@@ -299,9 +317,9 @@ def execute_full_checkout(context, page):
     place_order_btn.scroll_into_view_if_needed()
     checkout_page.wait_for_timeout(1000)
     place_order_btn.click()
-
     checkout_page.wait_for_timeout(5000)
-    print("\n🎉 Order Placed Successfully!")
+
+    return verify_order_placed(checkout_page, bought_item)
 
 
 def run_automation():
@@ -318,18 +336,23 @@ def run_automation():
             print("[ABORT] Could not place order in this run.")
             return
 
+        order_confirmed = False
         try:
-            execute_full_checkout(context, page)
+            order_confirmed = execute_full_checkout(context, page, bought_item)
         except Exception as e:
             print(f"\n[INFO] Checkout status: {e}")
 
-        history["purchased_products"].append({
-            "date": datetime.date.today().isoformat(),
-            "brand": bought_item["brand"],
-            "title": bought_item["title"],
-            "rating": bought_item["rating"],
-        })
-        save_history(history)
+        if order_confirmed:
+            print("\n🎉 Order Placed Successfully!")
+            history["purchased_products"].append({
+                "date": datetime.date.today().isoformat(),
+                "brand": bought_item["brand"],
+                "title": bought_item["title"],
+                "rating": bought_item["rating"],
+            })
+            save_history(history)
+        else:
+            print("\n[FAIL] Could not verify the order in order history. Not marking as purchased.")
 
         print("\n" + "="*60)
         print("RUN COMPLETE: Order logged and finished.")
