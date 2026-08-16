@@ -25,11 +25,25 @@ jobs:
           pip install -r requirements.txt
           playwright install chromium
           playwright install-deps
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Write session cookies
+        env:
+          MYNTRA_COOKIES_JSON: ${{ secrets.MYNTRA_COOKIES_JSON }}
+        run: |
+          printf '%s' "$MYNTRA_COOKIES_JSON" > myntra_cookies.json
 
       - name: Execute Myntra Order Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+          export DISPLAY=:99
+          for i in $(seq 1 20); do
+            [ -e /tmp/.X11-unix/X99 ] && break
+            sleep 0.5
+          done
           python myntra_weekly_order.py
 
       - name: Commit & Push Updated Purchased History
