@@ -161,7 +161,13 @@ def find_and_add_best_tshirt(context, page, history):
         total_found = cards.count()
         count = min(total_found, 20)
     except Exception:
-        print("[FAIL] Could not load Myntra product listings.")
+        print(f"[FAIL] Could not load Myntra product listings. Page title: {page.title()!r}, URL: {page.url}")
+        try:
+            debug_path = BASE_DIR / "debug_catalog_failure.png"
+            page.screenshot(path=str(debug_path))
+            print(f"[DEBUG] Saved screenshot to {debug_path}")
+        except Exception as shot_err:
+            print(f"[DEBUG] Could not save screenshot: {shot_err}")
         return False, None
 
     raw_candidates = []

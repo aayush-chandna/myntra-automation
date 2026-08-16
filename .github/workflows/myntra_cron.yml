@@ -49,12 +49,24 @@ jobs:
           done
           python myntra_weekly_order.py
 
+      - name: Upload debug screenshot on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-catalog-failure
+          path: debug_catalog_failure.png
+          if-no-files-found: ignore
+
       - name: Commit & Push Updated Purchased History
         if: always()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add purchased_history.json
-          git status
-          git diff-index --quiet HEAD || git commit -m "chore: update purchased_history.json [skip ci]"
-          git push
+          if [ -f purchased_history.json ]; then
+            git add purchased_history.json
+            git status
+            git diff-index --quiet HEAD || git commit -m "chore: update purchased_history.json [skip ci]"
+            git push
+          else
+            echo "No purchased_history.json present (script aborted before any successful order) - nothing to commit."
+          fi
