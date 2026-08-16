@@ -6,6 +6,9 @@ on:
     - cron: '30 6 * * 1,3,5'
   workflow_dispatch: # Allows manual run button in GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
